@@ -142,7 +142,7 @@ class EntrypointCommand extends Command
             // SUCCESS - WE HAVE DAGGER ID
             $io->info('DAGGER MODULE ID' . substr($daggerModule->id(), 0, 10));
             $result = $daggerModule->id();
-            $currentFunctionCall->returnValue(new DaggerJson(json_encode($result)));
+            $currentFunctionCall->returnValue(new DaggerJson($result));
         } catch (\Throwable $t) {
             $io->error($t->getMessage());
             if (method_exists($t, 'getResponse')) {
