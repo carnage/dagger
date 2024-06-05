@@ -8,6 +8,7 @@ use Dagger\Client;
 use Dagger\Connection;
 use Dagger\Json as DaggerJson;
 use Dagger\TypeDef;
+use GuzzleHttp\Psr7\Response;
 use Roave\BetterReflection\BetterReflection;
 use Roave\BetterReflection\Reflector\DefaultReflector;
 use Roave\BetterReflection\SourceLocator\Type\DirectoriesSourceLocator;
@@ -144,7 +145,9 @@ class EntrypointCommand extends Command
         } catch (\Throwable $t) {
             $io->error($t->getMessage());
             if (method_exists($t, 'getResponse')) {
-                $io->error($t->getResponse());
+                /** @var Response $response */
+                $response = $t->getResponse();
+                $io->error($response->getBody()->getContents());
             }
         }
 
