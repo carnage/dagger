@@ -213,10 +213,10 @@ class EntrypointCommand extends Command
                 return $this->daggerConnection->typeDef()->withKind(TypeDefKind::VOID_KIND);
             default:
                 if (class_exists($methodReturnType->getName())) {
-                    return $this->daggerConnection->typeDef()->withObject($methodReturnType->getName());
+                    return $this->daggerConnection->typeDef()->withObject(str_replace('\\', ':', $methodReturnType->getName()));
                 }
                 if (interface_exists($methodReturnType->getName())) {
-                    return $this->daggerConnection->typeDef()->withInterface($methodReturnType->getName());
+                    return $this->daggerConnection->typeDef()->withInterface(str_replace('\\', ':', $methodReturnType->getName()));
                 }
 
                 throw new \RuntimeException('dont know what to do with: ' . $methodReturnType->getName());
