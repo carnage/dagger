@@ -6,6 +6,7 @@ use Dagger\Attribute\DaggerFunction;
 use Dagger\Attribute\DaggerObject;
 use Dagger\Client;
 use Dagger\Connection;
+use Dagger\Json as DaggerJson;
 use Roave\BetterReflection\BetterReflection;
 use Roave\BetterReflection\Reflector\DefaultReflector;
 use Roave\BetterReflection\SourceLocator\Type\DirectoriesSourceLocator;
@@ -44,7 +45,8 @@ class EntrypointCommand extends Command
         // $moduleName = $this->daggerConnection->module()->name();
         // $io->info('MODULE NAME: ' . $moduleName);
 
-        $parentName = $this->daggerConnection->currentFunctionCall()->parent()->getValue();
+        $currentFunctionCall = $this->daggerConnection->currentFunctionCall();
+        $parentName = $currentFunctionCall->parent()->getValue();
 
         if (!$this->hasParentName($parentName)) {
             $io->info('NO PARENT NAME FOUND');
@@ -131,6 +133,8 @@ class EntrypointCommand extends Command
             // SUCCESS - WE HAVE DAGGER ID
             $io->info('DAGGER MODULE ID' . substr($daggerModule->id(), 0, 10));
 
+            $result = $daggerModule->id();
+
             // $reflectionMethod = new ReflectionMethod($reflectedClass->, 'myMethod');
             // // Get the attributes of the method
             // $attributes = $reflectionMethod->getAttributes();
@@ -141,6 +145,8 @@ class EntrypointCommand extends Command
             // }
 
         }
+
+        $currentFunctionCall->returnValue(new DaggerJson(json_encode($result)));
 
         return Command::SUCCESS;
     }
