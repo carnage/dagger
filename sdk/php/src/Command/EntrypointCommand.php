@@ -143,7 +143,9 @@ class EntrypointCommand extends Command
             $currentFunctionCall->returnValue(new DaggerJson(json_encode($result)));
         } catch (\Throwable $t) {
             $io->error($t->getMessage());
-
+            if (method_exists($t, 'getResponse')) {
+                $io->error($t->getResponse());
+            }
         }
 
         return Command::SUCCESS;
