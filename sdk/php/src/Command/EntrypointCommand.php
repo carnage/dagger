@@ -182,7 +182,7 @@ class EntrypointCommand extends Command
     private function getDaggerFunctionAttribute(ReflectionMethod $method): ?DaggerFunction
     {
         $attribute = current($method->getAttributes(DaggerFunction::class)) ?: null;
-        return $attribute?->newInstance()->type;
+        return $attribute?->newInstance();
     }
 
     private function getTypeDefFromPHPType(\ReflectionNamedType $methodReturnType): TypeDef
