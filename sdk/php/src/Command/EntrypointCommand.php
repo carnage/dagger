@@ -152,7 +152,7 @@ class EntrypointCommand extends Command
             $io->error($t->getTraceAsString());
         }
 
-        return Command::SUCCESS;
+        return Command::FAILURE;
     }
 
     private function findSrcDirectory(): string
