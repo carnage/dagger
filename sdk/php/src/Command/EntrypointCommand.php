@@ -7,6 +7,7 @@ use Dagger\Attribute\DaggerObject;
 use Dagger\Client;
 use Dagger\Connection;
 use Dagger\Json as DaggerJson;
+use Dagger\TypeDef;
 use Roave\BetterReflection\BetterReflection;
 use Roave\BetterReflection\Reflector\DefaultReflector;
 use Roave\BetterReflection\SourceLocator\Type\DirectoriesSourceLocator;
@@ -60,80 +61,69 @@ class EntrypointCommand extends Command
         $classes = $this->getDaggerObjects($dir);
         $io->info(var_export($classes, true));
 
+        $daggerModule = $this->daggerConnection->module();
+
         // Find classes tagged with [DaggerFunction]
         foreach($classes as $class) {
-
             $io->info('FOUND CLASS WITH DaggerFunction annotation: ' . $class);
+            $reflectedClass = new ReflectionClass($class);
 
-            $daggerModule = $this->daggerConnection->module();
-
-            // @todo - need to take the RETURN type of the method, and map that to the correct dagger TypeDefKind
-            // See: https://github.com/dagger/dagger/blob/main/sdk/typescript/introspector/scanner/utils.ts#L95-L117
-            $stringType = $this->daggerConnection
-                ->typeDef()
-                ->withKind(TypeDefKind::STRING_KIND);
-        
+            $typeDef = $this->daggerConnection->typeDef()->withObject($reflectedClass->getName());
 
             // Loop thru all the functions in this class
-            $reflectedClass = new ReflectionClass($class);
-            $reflectedMethods = $reflectedClass->getMethods(ReflectionMethod::IS_PUBLIC);
-            // $io->info(var_export($reflectedMethods, true));
+            foreach($reflectedClass->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+                $functionAttribute = $this->getDaggerFunctionAttribute($method);
+                if ($functionAttribute === null) {
+                    continue;
+                }
+                // We found a method with a DaggerFunction attribute! yay!
+                $io->info('FOUND METHOD with DaggerFunction attribute! yay');
 
-            foreach($reflectedMethods as $method) {
                 $methodName = $method->getName();
                 $io->info('FOUND METHOD: ' . $methodName);
 
                 $methodReturnType = $method->getReturnType();
 
-                $func = $this->daggerConnection->function($methodName, $stringType);
-                $obj = $this->daggerConnection->typeDef()
-                    ->withObject('PaulTestModule')
-                    ->withFunction($func);
+                if (!($methodReturnType instanceof \ReflectionNamedType)) {
+                    throw new \RuntimeException('Cannot handle union/intersection types yet');
+                }
 
-                $daggerModule = $daggerModule->withObject($obj);
+                $returnType = $this->getTypeDefFromPHPType($methodReturnType);
+
+                $func = $this->daggerConnection->function($methodName, $returnType);
+                $typeDef = $typeDef->withFunction($func);
 
                 // Premarurely end the loop here...
                 continue;
 
-                $methodAttributes = $method->getAttributes();
 
-                foreach($methodAttributes as $methodAttribute) {
-                    if(!$this->hasDaggerFunctionAttribute($methodAttribute)) {
-                        continue;
-                    }
+                $methodArgs = $method->getParameters();
 
-                    // We found a method with a DaggerFunction attribute! yay!
-                    $io->info('FOUND METHOD with DaggerFunction attribute! yay');
+                // Perhaps Dagger mandates a return type, and if we don't find one,
+                // then we flag up an error/notice/exception/warning
 
-                    $methodArgs = $method->getParameters();
-
-                    // Perhaps Dagger mandates a return type, and if we don't find one,
-                    // then we flag up an error/notice/exception/warning
-                    
-                    foreach($methodArgs as $arg) {
-                        $argType = $arg->getType()->getName();
-                        $argName = $arg->getName();
-                        $io->info('METHOD: ' . $method->getName() . ' - ARG: ' . $arg->getName());
-                        $io->info('ARG :   ' . $argName . ' - OF TYPE: ' . $argType);
-                    }
-
-                    /*$client->module()->withObject(
-                        $client->typeDef()->withFunction(
-                            $client->function()
-                                ->withArg()
-                        )
-                    );*/
-
-                    // create a ->withFunction entry
-                    // Find the args on the function, and do ->withArg() on it
+                foreach($methodArgs as $arg) {
+                    $argType = $arg->getType()->getName();
+                    $argName = $arg->getName();
+                    $io->info('METHOD: ' . $method->getName() . ' - ARG: ' . $arg->getName());
+                    $io->info('ARG :   ' . $argName . ' - OF TYPE: ' . $argType);
                 }
+
+                /*$client->module()->withObject(
+                    $client->typeDef()->withFunction(
+                        $client->function()
+                            ->withArg()
+                    )
+                );*/
+
+                // create a ->withFunction entry
+                // Find the args on the function, and do ->withArg() on it
                 // $io->info(var_export($methodAttributes, true));
             }
 
-            // SUCCESS - WE HAVE DAGGER ID
-            $io->info('DAGGER MODULE ID' . substr($daggerModule->id(), 0, 10));
 
-            $result = $daggerModule->id();
+            $daggerModule->withObject($typeDef);
+
 
             // $reflectionMethod = new ReflectionMethod($reflectedClass->, 'myMethod');
             // // Get the attributes of the method
@@ -146,6 +136,9 @@ class EntrypointCommand extends Command
 
         }
 
+        // SUCCESS - WE HAVE DAGGER ID
+        $io->info('DAGGER MODULE ID' . substr($daggerModule->id(), 0, 10));
+        $result = $daggerModule->id();
         $currentFunctionCall->returnValue(new DaggerJson(json_encode($result)));
 
         return Command::SUCCESS;
@@ -186,9 +179,37 @@ class EntrypointCommand extends Command
         return $parentName !== 'null';
     }
 
-    private function hasDaggerFunctionAttribute(ReflectionAttribute $attribute): bool
+    private function getDaggerFunctionAttribute(ReflectionMethod $method): ?DaggerFunction
     {
-        return $attribute->getName() === DaggerFunction::class;
+        $attribute = current($method->getAttributes(DaggerFunction::class)) ?: null;
+        return $attribute?->newInstance()->type;
     }
 
+    private function getTypeDefFromPHPType(\ReflectionNamedType $methodReturnType): TypeDef
+    {
+        // See: https://github.com/dagger/dagger/blob/main/sdk/typescript/introspector/scanner/utils.ts#L95-L117
+        //@TODO support descriptions, optional and defaults.
+        //@TODO support arrays via additional attribute to define the array subtype
+        switch ($methodReturnType->getName()) {
+            case 'string':
+            case 'int':
+            case 'bool':
+                return $this->daggerConnection->typeDef()->withScalar($methodReturnType->getName());
+            case 'float':
+            case 'array':
+                throw new \RuntimeException('cant support type: ' . $methodReturnType->getName());
+            case 'void':
+                return $this->daggerConnection->typeDef()->withKind(TypeDefKind::VOID_KIND);
+            default:
+                if (class_exists($methodReturnType->getName())) {
+                    return $this->daggerConnection->typeDef()->withObject($methodReturnType->getName());
+                }
+                if (interface_exists($methodReturnType->getName())) {
+                    return $this->daggerConnection->typeDef()->withInterface($methodReturnType->getName());
+                }
+
+                throw new \RuntimeException('dont know what to do with: ' . $methodReturnType->getName());
+
+        }
+    }
 }
