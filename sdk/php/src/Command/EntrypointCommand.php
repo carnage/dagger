@@ -125,7 +125,7 @@ class EntrypointCommand extends Command
                 }
 
 
-                $daggerModule->withObject($typeDef);
+                $daggerModule = $daggerModule->withObject($typeDef);
 
 
                 // $reflectionMethod = new ReflectionMethod($reflectedClass->, 'myMethod');
