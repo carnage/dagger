@@ -203,9 +203,11 @@ class EntrypointCommand extends Command
         //@TODO support arrays via additional attribute to define the array subtype
         switch ($methodReturnType->getName()) {
             case 'string':
+                return $this->daggerConnection->typeDef()->withKind(TypeDefKind::STRING_KIND);
             case 'int':
+                return $this->daggerConnection->typeDef()->withKind(TypeDefKind::INTEGER_KIND);
             case 'bool':
-                return $this->daggerConnection->typeDef()->withScalar($methodReturnType->getName());
+                return $this->daggerConnection->typeDef()->withKind(TypeDefKind::BOOLEAN_KIND);
             case 'float':
             case 'array':
                 throw new \RuntimeException('cant support type: ' . $methodReturnType->getName());
