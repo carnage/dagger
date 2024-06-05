@@ -70,7 +70,8 @@ class EntrypointCommand extends Command
                 $io->info('FOUND CLASS WITH DaggerFunction annotation: ' . $class);
                 $reflectedClass = new ReflectionClass($class);
 
-                $typeDef = $this->daggerConnection->typeDef()->withObject($reflectedClass->getName());
+                $typeDef = $this->daggerConnection->typeDef()
+                    ->withObject($this->normalizeClassname($reflectedClass->getName()));
 
                 // Loop thru all the functions in this class
                 foreach ($reflectedClass->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
@@ -215,14 +216,19 @@ class EntrypointCommand extends Command
                 return $this->daggerConnection->typeDef()->withKind(TypeDefKind::VOID_KIND);
             default:
                 if (class_exists($methodReturnType->getName())) {
-                    return $this->daggerConnection->typeDef()->withObject(str_replace('\\', ':', $methodReturnType->getName()));
+                    return $this->daggerConnection->typeDef()->withObject($this->normalizeClassname($methodReturnType->getName()));
                 }
                 if (interface_exists($methodReturnType->getName())) {
-                    return $this->daggerConnection->typeDef()->withInterface(str_replace('\\', ':', $methodReturnType->getName()));
+                    return $this->daggerConnection->typeDef()->withInterface($this->normalizeClassname($methodReturnType->getName()));
                 }
 
                 throw new \RuntimeException('dont know what to do with: ' . $methodReturnType->getName());
 
         }
+    }
+
+    private function normalizeClassname(string $classname): string
+    {
+        return str_replace('\\', ':', $classname);
     }
 }
