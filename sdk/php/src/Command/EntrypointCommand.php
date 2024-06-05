@@ -149,6 +149,7 @@ class EntrypointCommand extends Command
                 $response = $t->getResponse();
                 $io->error($response->getBody()->getContents());
             }
+            $io->error($t->getTraceAsString());
         }
 
         return Command::SUCCESS;
