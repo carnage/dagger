@@ -228,6 +228,8 @@ class EntrypointCommand extends Command
 
     private function normalizeClassname(string $classname): string
     {
+        $classname = str_replace('DaggerModule', '', $classname);
+        $classname = ltrim($classname, '\\');
         return str_replace('\\', ':', $classname);
     }
 }
