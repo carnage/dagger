@@ -87,41 +87,30 @@ class EntrypointCommand extends Command
 
                     $methodReturnType = $method->getReturnType();
 
+                    // Perhaps Dagger mandates a return type, and if we don't find one,
+                    // then we flag up an error/notice/exception/warning
+                    //@TODO is this check sufficient to ensure a return type?
+                    //@TODO when we figure out how to support union/intersection types, we still need a check for no return type
                     if (!($methodReturnType instanceof \ReflectionNamedType)) {
                         throw new \RuntimeException('Cannot handle union/intersection types yet');
                     }
 
-                    $returnType = $this->getTypeDefFromPHPType($methodReturnType);
+                    $func = $this->daggerConnection->function(
+                        $methodName,
+                        $this->getTypeDefFromPHPType($methodReturnType)
+                    );
 
-                    $func = $this->daggerConnection->function($methodName, $returnType);
-                    $typeDef = $typeDef->withFunction($func);
+                    foreach ($method->getParameters() as $arg) {
+                        $argType = $arg->getType();
+                        //@TODO see above notes on arg types
+                        if (!($argType instanceof \ReflectionNamedType)) {
+                            throw new \RuntimeException('Cannot handle union/intersection types yet');
+                        }
 
-                    // Premarurely end the loop here...
-                    continue;
-
-
-                    $methodArgs = $method->getParameters();
-
-                    // Perhaps Dagger mandates a return type, and if we don't find one,
-                    // then we flag up an error/notice/exception/warning
-
-                    foreach ($methodArgs as $arg) {
-                        $argType = $arg->getType()->getName();
-                        $argName = $arg->getName();
-                        $io->info('METHOD: ' . $method->getName() . ' - ARG: ' . $arg->getName());
-                        $io->info('ARG :   ' . $argName . ' - OF TYPE: ' . $argType);
+                        $func = $func->withArg($arg->getName(), $this->getTypeDefFromPHPType($argType));
                     }
 
-                    /*$client->module()->withObject(
-                        $client->typeDef()->withFunction(
-                            $client->function()
-                                ->withArg()
-                        )
-                    );*/
-
-                    // create a ->withFunction entry
-                    // Find the args on the function, and do ->withArg() on it
-                    // $io->info(var_export($methodAttributes, true));
+                    $typeDef = $typeDef->withFunction($func);
                 }
 
 
@@ -144,6 +133,7 @@ class EntrypointCommand extends Command
             $result = $daggerModule->id();
             $currentFunctionCall->returnValue(new DaggerJson(json_encode((string) $result)));
         } catch (\Throwable $t) {
+            //@TODO tidy this up...
             $io->error($t->getMessage());
             if (method_exists($t, 'getResponse')) {
                 /** @var Response $response */
