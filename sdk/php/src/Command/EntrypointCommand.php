@@ -6,6 +6,9 @@ use Dagger\Attribute\DaggerFunction;
 use Dagger\Attribute\DaggerObject;
 use Dagger\Client;
 use Dagger\Connection;
+use Dagger\Container;
+use Dagger\Directory;
+use Dagger\File;
 use Dagger\Json as DaggerJson;
 use Dagger\TypeDef;
 use GuzzleHttp\Psr7\Response;
@@ -204,6 +207,12 @@ class EntrypointCommand extends Command
                 throw new \RuntimeException('cant support type: ' . $methodReturnType->getName());
             case 'void':
                 return $this->daggerConnection->typeDef()->withKind(TypeDefKind::VOID_KIND);
+            case Container::class:
+                return $this->daggerConnection->typeDef()->withObject('Container');
+            case Directory::class:
+                return $this->daggerConnection->typeDef()->withObject('Directory');
+            case File::class:
+                return $this->daggerConnection->typeDef()->withObject('File');
             default:
                 if (class_exists($methodReturnType->getName())) {
                     return $this->daggerConnection->typeDef()->withObject($this->normalizeClassname($methodReturnType->getName()));
