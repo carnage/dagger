@@ -42,7 +42,6 @@ class EntrypointCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        /** @var Client $client */
 
         $io->info('==----=-==-=-=-= CUSTOM CODEEEE ==----=-==-=-=-=');
 
@@ -51,9 +50,9 @@ class EntrypointCommand extends Command
         // $io->info('MODULE NAME: ' . $moduleName);
 
         $currentFunctionCall = $this->daggerConnection->currentFunctionCall();
-        $parentName = $currentFunctionCall->parent()->getValue();
+        $parentName = json_decode($currentFunctionCall->parent()->getValue(), true);
 
-        if (!$this->hasParentName($parentName)) {
+        if ($parentName === null) {
             $io->info('NO PARENT NAME FOUND');
             // register module with dagger
         } else {
@@ -177,11 +176,6 @@ class EntrypointCommand extends Command
         }
 
         return $classes;
-    }
-
-    private function hasParentName(string $parentName): bool
-    {
-        return $parentName !== 'null';
     }
 
     private function getDaggerFunctionAttribute(ReflectionMethod $method): ?DaggerFunction
