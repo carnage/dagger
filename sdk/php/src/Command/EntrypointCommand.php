@@ -14,6 +14,7 @@ use Dagger\File;
 use Dagger\FunctionCall;
 use Dagger\Json as DaggerJson;
 use Dagger\Service\DecodesValue;
+use Dagger\Service\FindsSrcDirectory;
 use Dagger\TypeDef;
 use GuzzleHttp\Psr7\Response;
 use Roave\BetterReflection\BetterReflection;
@@ -58,7 +59,7 @@ class EntrypointCommand extends Command
         if ($parentName === '') {
             $io->info('NO PARENT NAME FOUND');
             // register module with dagger
-            $dir = $this->findSrcDirectory();
+            $dir = (new FindsSrcDirectory())();
             $classes = $this->getDaggerObjects($dir);
             //        $io->info(var_export($classes, true));
 
@@ -177,22 +178,6 @@ class EntrypointCommand extends Command
         $currentFunctionCall->returnValue(new DaggerJson(json_encode($result)));
 
         return Command::SUCCESS;
-    }
-
-    // todo extract into FindsSrcDirectory
-    private function findSrcDirectory(): string
-    {
-        // loops up one dir at a time until it finds dagger file
-        $dir = __DIR__;
-        while(!file_exists($dir . '/dagger') && $dir !== '/') {
-            $dir = realpath($dir . '/..');
-        }
-
-        if (!file_exists($dir . '/dagger') || !file_exists($dir . '/src')) {
-            throw new \RuntimeException('Could not find module source directory');
-        }
-
-        return $dir . '/src';
     }
 
     // todo extract into FindsDaggerObjects
