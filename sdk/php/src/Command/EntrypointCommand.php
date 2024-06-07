@@ -14,6 +14,7 @@ use Dagger\File;
 use Dagger\FunctionCall;
 use Dagger\Json as DaggerJson;
 use Dagger\Service\DecodesValue;
+use Dagger\Service\FindsDaggerObjects;
 use Dagger\Service\FindsSrcDirectory;
 use Dagger\TypeDef;
 use GuzzleHttp\Psr7\Response;
@@ -59,17 +60,16 @@ class EntrypointCommand extends Command
         if ($parentName === '') {
             $io->info('NO PARENT NAME FOUND');
             // register module with dagger
-            $dir = (new FindsSrcDirectory())();
-            $classes = $this->getDaggerObjects($dir);
-            //        $io->info(var_export($classes, true));
+            $src = (new FindsSrcDirectory())();
+            $daggerObjects = (new FindsDaggerObjects())($src);
 
             try {
                 $daggerModule = $this->daggerConnection->module();
 
                 // Find classes tagged with [DaggerFunction]
-                foreach ($classes as $class) {
+                foreach ($daggerObjects as $daggerObject) {
                     //                $io->info('FOUND CLASS WITH DaggerFunction annotation: ' . $class);
-                    $reflectedClass = new ReflectionClass($class);
+                    $reflectedClass = new ReflectionClass($daggerObject);
 
                     $typeDef = $this->daggerConnection->typeDef()
                         ->withObject($this->normalizeClassname($reflectedClass->getName()));
@@ -178,26 +178,6 @@ class EntrypointCommand extends Command
         $currentFunctionCall->returnValue(new DaggerJson(json_encode($result)));
 
         return Command::SUCCESS;
-    }
-
-    // todo extract into FindsDaggerObjects
-    // todo make the directory nullable
-    private function getDaggerObjects(?string $dir = null): array
-    {
-        // todo if $dir is null, instantiate FindsSrcDirectory and use it to get $dir
-        // this finds every class within the dir and any subDir
-        $astLocator = (new BetterReflection())->astLocator();
-        $directoriesSourceLocator = new DirectoriesSourceLocator([$dir], $astLocator);
-        $reflector = new DefaultReflector($directoriesSourceLocator);
-        $classes = [];
-
-        foreach($reflector->reflectAllClasses() as $class) {
-            if (count($class->getAttributesByName(DaggerObject::class))) {
-                $classes[] = $class->getName();
-            }
-        }
-
-        return $classes;
     }
 
     private function getDaggerFunctionAttribute(ReflectionMethod $method): ?DaggerFunction
