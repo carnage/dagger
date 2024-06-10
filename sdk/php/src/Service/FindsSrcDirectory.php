@@ -25,29 +25,27 @@ final readonly class FindsSrcDirectory
      */
     public function __invoke(?string $dir = null): string
     {
-        $dir = rtrim(is_null($dir) ? __DIR__ : $dir, '/');
+        $dir = is_null($dir) ? __DIR__ : rtrim($dir, '/');
 
-        if (!$this->hasDaggerFile($dir) || !$this->hasSrcDirectory($dir)) {
-            return $dir !== '/' && $dir !== dirname($dir) ?
-                $this(dirname($dir)) :
-                throw new RuntimeException('Cannot find module src directory');
-        }
-
-        return $this->getSrcDirectory($dir);
+        return $this->searchDirectory($dir) ??
+            $this->searchUpwards($dir) ??
+            throw new RuntimeException('Cannot find module src directory');
     }
 
-    private function hasDaggerFile(string $dir): bool
+    private function searchDirectory(string $dir): ?string
     {
-        return file_exists("$dir/dagger");
+        return file_exists("$dir/dagger") && is_dir("$dir/src") ?
+            "$dir/src" :
+            null;
     }
 
-    private function hasSrcDirectory(string $dir): bool
+    private function searchUpwards(string $dir): ?string
     {
-        return file_exists("$dir/src") && is_dir("$dir/src");
-    }
+        $parentDir = dirname($dir);
 
-    private function getSrcDirectory(string $dir): ?string
-    {
-        return "$dir/src";
+        return $parentDir === '.' ?
+            null :
+            $this->searchDirectory($parentDir) ??
+            $this->searchUpwards($parentDir);
     }
 }

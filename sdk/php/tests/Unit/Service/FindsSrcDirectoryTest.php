@@ -11,9 +11,22 @@ use org\bovigo\vfs\vfsStreamDirectory;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 class FindsSrcDirectoryTest extends TestCase
 {
+    #[Test]
+    public function itThrowsExceptionIfItCannotFindSrc(): void
+    {
+        $root = (vfsStream::setup())->url();
+
+        $sut = new FindsSrcDirectory();
+
+        self::expectException(RuntimeException::class);
+
+        $sut($root);
+    }
+
     #[Test]
     #[DataProvider('provideSrcDirectories')]
     public function itFindsModuleSrcDirectory(
@@ -53,6 +66,15 @@ class FindsSrcDirectoryTest extends TestCase
                 'dagger' => 'Dagger file',
             ],
             '',
+        ];
+
+        yield $case('/src', '/src') => [
+            'src',
+            [
+                'src' => [],
+                'dagger' => 'Dagger file',
+            ],
+            'src',
         ];
 
         yield $case('/vendor/bin', '/src') => [
