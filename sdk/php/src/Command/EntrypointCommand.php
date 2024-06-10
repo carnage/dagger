@@ -14,6 +14,7 @@ use Dagger\File;
 use Dagger\FunctionCall;
 use Dagger\Json as DaggerJson;
 use Dagger\Service\DecodesValue;
+use Dagger\Service\FindsDaggerFunctions;
 use Dagger\Service\FindsDaggerObjects;
 use Dagger\Service\FindsSrcDirectory;
 use Dagger\TypeDef;
@@ -61,27 +62,26 @@ class EntrypointCommand extends Command
             $io->info('NO PARENT NAME FOUND');
             // register module with dagger
             $src = (new FindsSrcDirectory())();
-            $daggerObjects = (new FindsDaggerObjects())($src);
+            $classNames = (new FindsDaggerObjects())($src);
+            $findsDaggerFunctions = new FindsDaggerFunctions();
 
             try {
+
                 $daggerModule = $this->daggerConnection->module();
 
                 // Find classes tagged with [DaggerFunction]
-                foreach ($daggerObjects as $daggerObject) {
+                foreach ($classNames as $className) {
                     //                $io->info('FOUND CLASS WITH DaggerFunction annotation: ' . $class);
-                    $reflectedClass = new ReflectionClass($daggerObject);
+                    $reflectedClass = new ReflectionClass($className);
+                    $reflectedMethods = $findsDaggerFunctions($reflectedClass);
 
                     $typeDef = $this->daggerConnection->typeDef()
                         ->withObject($this->normalizeClassname($reflectedClass->getName()));
 
                     // Loop thru all the functions in this class
-                    foreach ($reflectedClass->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-                        $functionAttribute = $this->getDaggerFunctionAttribute($method);
-                        if ($functionAttribute === null) {
-                            continue;
-                        }
-                        // We found a method with a DaggerFunction attribute! yay!
-                        //                    $io->info('FOUND METHOD with DaggerFunction attribute! yay');
+                    foreach ($reflectedMethods as $method) {
+                        $functionAttribute = $this
+                            ->getDaggerFunctionAttribute($method);
 
                         $methodName = $method->getName();
                         //                    $io->info('FOUND METHOD: ' . $methodName);

@@ -16,6 +16,12 @@ final class ButterKnife
         return true;
     }
 
+    #[DaggerFunction]
+    public function sliceBread(): string
+    {
+        return 'bread';
+    }
+
     public function accidentallyDropOnFloor(bool $hasFiveSecondsPassed): void
     {
     }
