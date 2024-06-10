@@ -5,35 +5,27 @@ declare(strict_types=1);
 namespace Dagger\Command;
 
 use Dagger\Attribute\DaggerFunction;
-use Dagger\Attribute\DaggerObject;
 use Dagger\Client;
-use Dagger\Connection;
+use Dagger\Client as DaggerClient;
 use Dagger\Container;
+use Dagger\Dagger;
 use Dagger\Directory;
 use Dagger\File;
-use Dagger\FunctionCall;
 use Dagger\Json as DaggerJson;
 use Dagger\Service\DecodesValue;
 use Dagger\Service\FindsDaggerFunctions;
 use Dagger\Service\FindsDaggerObjects;
 use Dagger\Service\FindsSrcDirectory;
 use Dagger\TypeDef;
+use Dagger\TypeDefKind;
 use GuzzleHttp\Psr7\Response;
-use Roave\BetterReflection\BetterReflection;
-use Roave\BetterReflection\Reflector\DefaultReflector;
-use Roave\BetterReflection\SourceLocator\Type\DirectoriesSourceLocator;
+use ReflectionClass;
+use ReflectionMethod;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Dagger\Dagger;
-use Dagger\Client as DaggerClient;
-use Dagger\ScalarTypeDef;
-use Dagger\TypeDefKind;
-use ReflectionAttribute;
-use ReflectionClass;
-use ReflectionMethod;
 
 #[AsCommand('dagger:entrypoint')]
 class EntrypointCommand extends Command
@@ -69,25 +61,20 @@ class EntrypointCommand extends Command
 
                 $daggerModule = $this->daggerConnection->module();
 
-                // Find classes tagged with [DaggerFunction]
                 foreach ($classNames as $className) {
-                    //                $io->info('FOUND CLASS WITH DaggerFunction annotation: ' . $class);
                     $reflectedClass = new ReflectionClass($className);
                     $reflectedMethods = $findsDaggerFunctions($reflectedClass);
 
                     $typeDef = $this->daggerConnection->typeDef()
                         ->withObject($this->normalizeClassname($reflectedClass->getName()));
 
-                    // Loop thru all the functions in this class
                     foreach ($reflectedMethods as $method) {
+
+                        //todo pull this into a value object
                         $functionAttribute = $this
                             ->getDaggerFunctionAttribute($method);
-
                         $methodName = $method->getName();
-                        //                    $io->info('FOUND METHOD: ' . $methodName);
-
                         $methodReturnType = $method->getReturnType();
-
                         // Perhaps Dagger mandates a return type, and if we don't find one,
                         // then we flag up an error/notice/exception/warning
                         //@TODO is this check sufficient to ensure a return type?
@@ -160,15 +147,17 @@ class EntrypointCommand extends Command
 
             $io->info(sprintf(
                 "Class: %s\n" .
-                "Function: %s\n".
-                'Arguments: %s',
+                "Function: %s\n",
                 $parentName,
                 $functionName,
-                var_export($args, true),
             ));
 
-
-            $result = ($class)->$functionName(...$args);
+            try {
+                $result = ($class)->$functionName(...$args);
+                $io->info(json_encode($result));
+            } catch (\Throwable $e) {
+                $io->info($e->getMessage());
+            }
             if ($result instanceof Client\IdAble) {
                 $result = (string) $result->id();
             }
