@@ -5,10 +5,12 @@ namespace Dagger\tests\Unit\Service;
 use Dagger\Client;
 use Dagger\Service\DecodesValue;
 use Generator;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+#[CoversClass(DecodesValue::class)]
 class DecodesValueTest extends TestCase
 {
     #[Test]

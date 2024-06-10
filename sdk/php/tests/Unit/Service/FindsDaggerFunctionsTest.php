@@ -8,12 +8,14 @@ use Dagger\Tests\Unit\Fixture\ButterKnife;
 use Dagger\Tests\Unit\Fixture\Spoon;
 use Dagger\Tests\Unit\Fixture\Spork;
 use Generator;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
 
+#[CoversClass(FindsDaggerFunctions::class)]
 class FindsDaggerFunctionsTest extends TestCase
 {
 

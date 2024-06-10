@@ -8,11 +8,13 @@ use Dagger\Service\FindsSrcDirectory;
 use Generator;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
+#[CoversClass(FindsSrcDirectory::class)]
 class FindsSrcDirectoryTest extends TestCase
 {
     #[Test]
