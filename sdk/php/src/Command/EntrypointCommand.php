@@ -18,6 +18,7 @@ use Dagger\Service\FindsDaggerObjects;
 use Dagger\Service\FindsSrcDirectory;
 use Dagger\TypeDef;
 use Dagger\TypeDefKind;
+use Dagger\ValueObject\DaggerObject;
 use GuzzleHttp\Psr7\Response;
 use ReflectionClass;
 use ReflectionMethod;
@@ -55,47 +56,49 @@ class EntrypointCommand extends Command
             // register module with dagger
             $src = (new FindsSrcDirectory())();
             $classNames = (new FindsDaggerObjects())($src);
-            $findsDaggerFunctions = new FindsDaggerFunctions();
+            $daggerObjects = array_map(
+                fn($c) => DaggerObject::fromReflection(
+                    new ReflectionClass($c),
+                    new FindsDaggerFunctions(),
+                ),
+                $classNames
+            );
 
             try {
 
                 $daggerModule = $this->daggerConnection->module();
 
-                foreach ($classNames as $className) {
-                    $reflectedClass = new ReflectionClass($className);
-                    $reflectedMethods = $findsDaggerFunctions($reflectedClass);
+                foreach ($daggerObjects as $daggerObject) {
 
                     $typeDef = $this->daggerConnection->typeDef()
-                        ->withObject($this->normalizeClassname($reflectedClass->getName()));
+                        ->withObject($this->normalizeClassname($daggerObject->name));
 
-                    foreach ($reflectedMethods as $method) {
+                    foreach ($daggerObject->daggerFunctions as $daggerFunction) {
 
-                        //todo pull this into a value object
-                        $functionAttribute = $this
-                            ->getDaggerFunctionAttribute($method);
-                        $methodName = $method->getName();
-                        $methodReturnType = $method->getReturnType();
                         // Perhaps Dagger mandates a return type, and if we don't find one,
                         // then we flag up an error/notice/exception/warning
                         //@TODO is this check sufficient to ensure a return type?
                         //@TODO when we figure out how to support union/intersection types, we still need a check for no return type
-                        if (!($methodReturnType instanceof \ReflectionNamedType)) {
+                        if (!($daggerFunction->returnType instanceof \ReflectionNamedType)) {
                             throw new \RuntimeException('Cannot handle union/intersection types yet');
                         }
 
-                        $func = $this->daggerConnection->function(
-                            $methodName,
-                            $this->getTypeDefFromPHPType($methodReturnType)
+                        $func = $this->daggerConnection
+                            ->function(
+                            $daggerFunction->name,
+                            $this->getTypeDefFromPHPType($daggerFunction->returnType)
                         );
 
-                        foreach ($method->getParameters() as $arg) {
-                            $argType = $arg->getType();
+                        foreach ($daggerFunction->parameters as $parameter) {
                             //@TODO see above notes on arg types
-                            if (!($argType instanceof \ReflectionNamedType)) {
+                            if (!($parameter->type instanceof \ReflectionNamedType)) {
                                 throw new \RuntimeException('Cannot handle union/intersection types yet');
                             }
 
-                            $func = $func->withArg($arg->getName(), $this->getTypeDefFromPHPType($argType));
+                            $func = $func->withArg(
+                                $parameter->name,
+                                $this->getTypeDefFromPHPType($parameter->type),
+                            );
                         }
 
                         $typeDef = $typeDef->withFunction($func);
@@ -167,12 +170,6 @@ class EntrypointCommand extends Command
         $currentFunctionCall->returnValue(new DaggerJson(json_encode($result)));
 
         return Command::SUCCESS;
-    }
-
-    private function getDaggerFunctionAttribute(ReflectionMethod $method): ?DaggerFunction
-    {
-        $attribute = current($method->getAttributes(DaggerFunction::class)) ?: null;
-        return $attribute?->newInstance();
     }
 
     private function getTypeDefFromPHPType(\ReflectionNamedType $methodReturnType): TypeDef
