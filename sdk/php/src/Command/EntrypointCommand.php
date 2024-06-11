@@ -168,9 +168,6 @@ class EntrypointCommand extends Command
             } catch (\Throwable $e) {
                 $io->info($e->getMessage());
             }
-            if ($result instanceof Client\IdAble) {
-                $result = (string) $result->id();
-            }
             // invocation, run module code.
         }
 
@@ -184,12 +181,11 @@ class EntrypointCommand extends Command
                 $io->error($response->getBody()->getContents());
             }
             $io->error($t->getTraceAsString());
-            $io->info($currentFunctionCall->lastQuery);
-
             return Command::FAILURE;
         }
 
-        return Command::SUCCESS;
+        $io->info($currentFunctionCall->lastQuery);
+        return Command::FAILURE;
     }
 
     private function getTypeDefFromPHPType(\ReflectionNamedType $methodReturnType): TypeDef
