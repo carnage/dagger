@@ -6,11 +6,8 @@ namespace Dagger\tests\Unit\ValueObject;
 
 use Dagger\Attribute;
 use Dagger\Service\FindsDaggerFunctions;
-use Dagger\Tests\Unit\Fixture\ButterKnife;
-use Dagger\Tests\Unit\Fixture\Spork;
 use Dagger\ValueObject\DaggerFunction;
 use Dagger\ValueObject\DaggerObject;
-use Dagger\ValueObject\Parameter;
 use Dagger\ValueObject\Type;
 use Generator;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -38,28 +35,65 @@ class DaggerObjectTest extends TestCase
     /** @return Generator<array{ 0: DaggerObject, 1:ReflectionClass}> */
     public static function provideReflectionClasses(): Generator
     {
-        yield 'DaggerObject without any methods' => [
-            new DaggerObject(
-                ButterKnife::class,
-                [
+        yield 'no methods' => (function () {
+            $class = new #[Attribute\DaggerObject] class () {
+            };
+
+            return [
+                new DaggerObject($class::class, []),
+                new ReflectionClass($class),
+            ];
+        })();
+
+        yield 'public method without DaggerFunction attribute' => (function () {
+            $class = new #[Attribute\DaggerObject] class () {
+                public function ignoreThis(): void
+                {
+
+                }
+            };
+
+            return [
+                new DaggerObject($class::class, []),
+                new ReflectionClass($class),
+            ];
+        })();
+
+        yield 'private method with DaggerFunction attribute' => (function () {
+            $class = new #[Attribute\DaggerObject] class () {
+                #[Attribute\DaggerFunction()]
+                private function ignoreThis(): void
+                {
+
+                }
+            };
+
+            return [
+                new DaggerObject($class::class, []),
+                new ReflectionClass($class),
+            ];
+        })();
+
+        yield 'public method with DaggerFunction attribute' => (function () {
+            $class = new #[Attribute\DaggerObject] class () {
+                #[Attribute\DaggerFunction()]
+                public function dontIgnoreThis(): void
+                {
+
+                }
+            };
+
+            return [
+                new DaggerObject($class::class, [
                     new DaggerFunction(
-                        'spread',
-                        '',
-                        [
-                            new Parameter('spread', new Type('string')),
-                            new Parameter('surface', new Type('string')),
-                        ],
-                        new Type('bool'),
-                    ),
-                    new DaggerFunction(
-                        'sliceBread',
+                        'dontIgnoreThis',
                         '',
                         [],
-                        new Type('string')
+                        new Type('void'),
                     )
-                ],
-            ),
-            new ReflectionClass(ButterKnife::class),
-        ];
+                ]),
+                new ReflectionClass($class),
+            ];
+        })();
     }
 }
