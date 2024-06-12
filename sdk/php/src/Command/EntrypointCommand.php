@@ -81,25 +81,21 @@ class EntrypointCommand extends Command
                         //@TODO is this check sufficient to ensure a return type?
                         //@TODO when we figure out how to support union/intersection types,
                         //@TODO we still need a check for no return type
-                        if (!($daggerFunction->returnType instanceof \ReflectionNamedType)) {
-                            throw new \RuntimeException('Cannot handle union/intersection types yet');
-                        }
 
                         $func = $this->daggerConnection
                             ->function(
                             $daggerFunction->name,
-                            $this->getTypeDefFromPHPType($daggerFunction->returnType)
+                            $this->getTypeDefFromPHPType(
+                                $daggerFunction->returnType->name
+                            )
                         );
 
                         foreach ($daggerFunction->parameters as $parameter) {
                             //@TODO see above notes on arg types
-                            if (!($parameter->type instanceof \ReflectionNamedType)) {
-                                throw new \RuntimeException('Cannot handle union/intersection types yet');
-                            }
 
                             $func = $func->withArg(
                                 $parameter->name,
-                                $this->getTypeDefFromPHPType($parameter->type),
+                                $this->getTypeDefFromPHPType($parameter->type->name),
                             );
                         }
 
@@ -108,16 +104,6 @@ class EntrypointCommand extends Command
 
 
                     $daggerModule = $daggerModule->withObject($typeDef);
-
-
-                    // $reflectionMethod = new ReflectionMethod($reflectedClass->, 'myMethod');
-                    // // Get the attributes of the method
-                    // $attributes = $reflectionMethod->getAttributes();
-                    // foreach ($attributes as $attribute) {
-                    //     $attributeInstance = $attribute->newInstance();
-                    //     echo 'Attribute class: ' . $attribute->getName() . PHP_EOL;
-                    //     echo 'Attribute value: ' . $attributeInstance->value . PHP_EOL;
-                    // }
 
                 }
 
@@ -172,7 +158,7 @@ class EntrypointCommand extends Command
         }
 
         try {
-            $currentFunctionCall->returnValue(new DaggerJson($result));
+            $currentFunctionCall->returnValue(new DaggerJson(json_encode($result)));
         } catch (\Throwable $t) {
             $io->error($t->getMessage());
             if (method_exists($t, 'getResponse')) {
@@ -184,8 +170,7 @@ class EntrypointCommand extends Command
             return Command::FAILURE;
         }
 
-        $io->info($currentFunctionCall->lastQuery);
-        return Command::FAILURE;
+        return Command::SUCCESS;
     }
 
     private function getTypeDefFromPHPType(\ReflectionNamedType $methodReturnType): TypeDef
