@@ -77,6 +77,12 @@ func (sdk *PhpSdk) CodegenBase(ctx context.Context, modSource *ModuleSource, int
 		WithoutEntrypoint().
 		WithWorkdir("/codegen").
 		WithExec([]string{
+		  "apk", "add", "git", "openssh", "curl",
+		}).
+		WithExec([]string {
+		  "git", "config", "--global", "url.https://github.com/.insteadOf", "git@github.com:",
+		}).
+		WithExec([]string{
 			"./install-composer.sh",
 		}).
 		WithExec([]string{
