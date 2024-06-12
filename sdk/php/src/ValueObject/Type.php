@@ -15,6 +15,8 @@ final readonly class Type
     ) {
     }
 
+    //@TODO support union/intersection types
+    //@TODO check for no return type
     public static function fromReflection(ReflectionType $type): self
     {
         if (!($type instanceof ReflectionNamedType)) {

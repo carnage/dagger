@@ -19,6 +19,7 @@ use Dagger\Service\FindsSrcDirectory;
 use Dagger\TypeDef;
 use Dagger\TypeDefKind;
 use Dagger\ValueObject\DaggerObject;
+use Dagger\ValueObject\Type;
 use GuzzleHttp\Psr7\Response;
 use ReflectionClass;
 use ReflectionMethod;
@@ -52,21 +53,16 @@ class EntrypointCommand extends Command
 
         $result = '';
         if ($parentName === '') {
-            $io->info('NO PARENT NAME FOUND');
+            $io->info('No parent name found, registering the module');
             // register module with dagger
             $src = (new FindsSrcDirectory())();
-            // todo instead of returning reflection classes here, return the value objects.
             $classNames = (new FindsDaggerObjects())($src);
-            $daggerObjects = array_map(
-                fn($c) => DaggerObject::fromReflection(
-                    new ReflectionClass($c),
-                    new FindsDaggerFunctions(),
-                ),
-                $classNames
-            );
+            $daggerObjects = array_map(fn($c) => DaggerObject::fromReflection(
+                new ReflectionClass($c),
+                new FindsDaggerFunctions(),
+            ), $classNames);
 
             try {
-
                 $daggerModule = $this->daggerConnection->module();
 
                 foreach ($daggerObjects as $daggerObject) {
@@ -75,27 +71,16 @@ class EntrypointCommand extends Command
                         ->withObject($this->normalizeClassname($daggerObject->name));
 
                     foreach ($daggerObject->daggerFunctions as $daggerFunction) {
-
-                        // Perhaps Dagger mandates a return type, and if we don't find one,
-                        // then we flag up an error/notice/exception/warning
-                        //@TODO is this check sufficient to ensure a return type?
-                        //@TODO when we figure out how to support union/intersection types,
-                        //@TODO we still need a check for no return type
-
                         $func = $this->daggerConnection
                             ->function(
                             $daggerFunction->name,
-                            $this->getTypeDefFromPHPType(
-                                $daggerFunction->returnType->name
-                            )
+                            $this->getTypeDef($daggerFunction->returnType)
                         );
 
                         foreach ($daggerFunction->parameters as $parameter) {
-                            //@TODO see above notes on arg types
-
                             $func = $func->withArg(
                                 $parameter->name,
-                                $this->getTypeDefFromPHPType($parameter->type->name),
+                                $this->getTypeDef($parameter->type),
                             );
                         }
 
@@ -127,11 +112,6 @@ class EntrypointCommand extends Command
             $functionName = $currentFunctionCall->name();
             $class = new $className();
             $class->client = $this->daggerConnection;
-            //todo            $this->daggerConnection->directory($idIDontHaveYet)
-            // directory is base64 encoded string
-            //todo json decode the DaggerJson Objects into a key->value array,
-            // then splat operate them into function
-            // call
 
             $args = $this->formatArguments(
                 $className,
@@ -173,13 +153,13 @@ class EntrypointCommand extends Command
         return Command::SUCCESS;
     }
 
-    private function getTypeDefFromPHPType(\ReflectionNamedType $methodReturnType): TypeDef
+    private function getTypeDef(Type $type): TypeDef
     {
         $typeDef = $this->daggerConnection->typeDef();
         // See: https://github.com/dagger/dagger/blob/main/sdk/typescript/introspector/scanner/utils.ts#L95-L117
         //@TODO support descriptions, optional and defaults.
         //@TODO support arrays via additional attribute to define the array subtype
-        switch ($methodReturnType->getName()) {
+        switch ($type->name) {
             case 'string':
                 return $typeDef->withKind(TypeDefKind::STRING_KIND);
             case 'int':
@@ -188,7 +168,7 @@ class EntrypointCommand extends Command
                 return $typeDef->withKind(TypeDefKind::BOOLEAN_KIND);
             case 'float':
             case 'array':
-            throw new \RuntimeException('cant support type: ' . $methodReturnType->getName());
+            throw new \RuntimeException('cant support type: ' . $type->name);
             case 'void':
                 return $typeDef->withKind(TypeDefKind::VOID_KIND);
             case Container::class:
@@ -198,14 +178,14 @@ class EntrypointCommand extends Command
             case File::class:
                 return $typeDef->withObject('File');
             default:
-                if (class_exists($methodReturnType->getName())) {
-                    return $typeDef->withObject($this->normalizeClassname($methodReturnType->getName()));
+                if (class_exists($type->name)) {
+                    return $typeDef->withObject($this->normalizeClassname($type->name));
                 }
-                if (interface_exists($methodReturnType->getName())) {
-                    return $typeDef->withInterface($this->normalizeClassname($methodReturnType->getName()));
+                if (interface_exists($type->name)) {
+                    return $typeDef->withInterface($this->normalizeClassname($type->name));
                 }
 
-                throw new \RuntimeException('dont know what to do with: ' . $methodReturnType->getName());
+                throw new \RuntimeException('dont know what to do with: ' . $type->name);
 
         }
     }
