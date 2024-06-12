@@ -8,7 +8,6 @@ use Dagger\Attribute;
 use Dagger\ValueObject;
 use ReflectionAttribute;
 use ReflectionMethod;
-use ReflectionType;
 use RuntimeException;
 
 final readonly class DaggerFunction
@@ -18,7 +17,7 @@ final readonly class DaggerFunction
         public string $name,
         public string $documentation,
         public array $parameters,
-        public ReflectionType $returnType,
+        public ValueObject\Type $returnType,
     ) {
     }
 
@@ -30,7 +29,7 @@ final readonly class DaggerFunction
         );
 
         $parameters = array_map(
-            fn($p) => Parameter::fromReflection($p),
+            fn($p) => ValueObject\Parameter::fromReflection($p),
             $method->getParameters(),
         );
 
@@ -38,7 +37,7 @@ final readonly class DaggerFunction
             $attribute->name ?? $method->name,
             $attribute->documentation ?? '',
             $parameters,
-            $method->getReturnType(),
+            ValueObject\Type::fromReflection($method->getReturnType()),
         );
     }
 
