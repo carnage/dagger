@@ -15,14 +15,14 @@ class Example
 {
     public Client $client;
 
-     #[DaggerFunction]
+     #[DaggerFunction('echo the value to standard output')]
      public function echo(string $value): Container
      {
          return $this->client->container()->from('alpine:latest')
              ->withExec(['echo', $value]);
      }
 
-    #[DaggerFunction]
+    #[DaggerFunction('Search a directory for lines matching a pattern')]
      public function grepDir(Directory $directory, string $pattern): string
      {
          return $this->client->container()->from('alpine:latest')
