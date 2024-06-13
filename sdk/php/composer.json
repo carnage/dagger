@@ -4,6 +4,7 @@
     "type": "library",
     "homepage": "https://dagger.io",
     "license": "Apache-2.0",
+    "minimum-stability": "dev",
     "require": {
         "php": ">=8.2",
         "roave/better-reflection": "^6.25",
