@@ -9,6 +9,7 @@ use ReflectionMethod;
 
 final class FindsDaggerFunctions
 {
+    //@todo combine this into DaggerObject Value Object
     /**
      * Finds the objects' public methods with the DaggerFunction attribute
      *

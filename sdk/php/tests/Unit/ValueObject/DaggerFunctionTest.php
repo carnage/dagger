@@ -32,10 +32,10 @@ class DaggerFunctionTest extends TestCase
     /** @return Generator<array{ 0: DaggerFunction, 1:ReflectionMethod}> */
     public static function provideReflectionMethods(): Generator
     {
-        yield 'defaults to method name' => [
+        yield 'no description, no parameters' => [
             new DaggerFunction(
                 'returnTrue',
-                '',
+                null,
                 [],
                 new Type('bool'),
             ),
@@ -47,22 +47,7 @@ class DaggerFunctionTest extends TestCase
                 }, 'returnTrue'),
         ];
 
-        yield 'attribute name overrides method name' => [
-            new DaggerFunction(
-                'return-bool-true',
-                '',
-                [],
-                new Type('bool'),
-            ),
-            new ReflectionMethod(new class () {
-                    #[Attribute\DaggerFunction(name: 'return-bool-true')]
-                    public function returnTrue(): bool
-                    {
-                    }
-                }, 'returnTrue'),
-        ];
-
-        yield 'it contains attribute documentation' => [
+        yield 'description, no parameters' => [
             new DaggerFunction(
                 'returnTrue',
                 'read me',
@@ -70,17 +55,17 @@ class DaggerFunctionTest extends TestCase
                 new Type('bool'),
             ),
             new ReflectionMethod(new class () {
-                    #[Attribute\DaggerFunction(documentation: 'read me')]
+                    #[Attribute\DaggerFunction(description: 'read me')]
                     public function returnTrue(): bool
                     {
                     }
                 }, 'returnTrue'),
         ];
 
-        yield 'it contains method parameters' => [
+        yield 'no description, one parameter' => [
             new DaggerFunction(
                 'echoText',
-                '',
+                null,
                 [new Parameter('text', new Type('string'))],
                 new Type('void'),
             ),

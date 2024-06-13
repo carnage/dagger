@@ -35,7 +35,7 @@ class EntrypointCommand extends Command
         $this->daggerClient = Dagger\Dagger::connect();
     }
 
-    //todo work out how to include documentation
+    //@todo work out how to include documentation
     protected function execute(
         InputInterface $input,
         OutputInterface $output
@@ -77,6 +77,10 @@ class EntrypointCommand extends Command
                         $daggerFunction->name,
                         $this->getTypeDef($daggerFunction->returnType)
                     );
+
+                if ($daggerFunction->description) {
+                    $func->withDescription($daggerFunction->description);
+                }
 
                 foreach ($daggerFunction->parameters as $parameter) {
                     $func = $func->withArg(
@@ -124,6 +128,13 @@ class EntrypointCommand extends Command
         $typeDef = $this->daggerClient->typeDef();
         // See: https://github.com/dagger/dagger/blob/main/sdk/typescript/introspector/scanner/utils.ts#L95-L117
         //@TODO support descriptions, optional and defaults.
+        /**
+         * Optional = nullable
+         * if nullable then check list of provides args
+         * if nullable arg not provides, then add argument in, and provide it with NULL,
+         * Default:
+         * already optional, nothing should need to be done.
+         */
         //@TODO support arrays via additional attribute to define the array subtype
         switch ($type->name) {
             case 'string':
@@ -145,10 +156,18 @@ class EntrypointCommand extends Command
                 return $typeDef->withObject('File');
             default:
                 if (class_exists($type->name)) {
-                    return $typeDef->withObject($this->normalizeClassname($type->name));
+                    throw new \RuntimeException(sprintf(
+                        'Currently cannot handle custom classes: %s',
+                        $type->name
+                    ));
+//                    return $typeDef->withObject($this->normalizeClassname($type->name));
                 }
                 if (interface_exists($type->name)) {
-                    return $typeDef->withInterface($this->normalizeClassname($type->name));
+                    throw new \RuntimeException(sprintf(
+                        'Currently cannot handle custom interfaces: %s',
+                        $type->name
+                    ));
+//                    return $typeDef->withInterface($this->normalizeClassname($type->name));
                 }
 
                 throw new \RuntimeException('dont know what to do with: ' . $type->name);

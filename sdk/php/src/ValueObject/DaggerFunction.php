@@ -15,7 +15,7 @@ final readonly class DaggerFunction
     /** @param ValueObject\Parameter[] $parameters */
     public function __construct(
         public string $name,
-        public string $documentation,
+        public ?string $description,
         public array $parameters,
         public ValueObject\Type $returnType,
     ) {
@@ -24,9 +24,9 @@ final readonly class DaggerFunction
     /* @throws \RuntimeException if missing DaggerFunction Attribute */
     public static function fromReflection(ReflectionMethod $method): self
     {
-        $attribute = self::getAttribute(
-            ...$method->getAttributes(Attribute\DaggerFunction::class)
-        );
+        $attribute = (current($method
+            ->getAttributes(Attribute\DaggerFunction::class))?: null)?->newInstance()
+            ?? throw new RuntimeException('method is not a DaggerFunction');
 
         $parameters = array_map(
             fn($p) => ValueObject\Parameter::fromReflection($p),
@@ -34,23 +34,10 @@ final readonly class DaggerFunction
         );
 
         return new self(
-            $attribute->name ?? $method->name,
-            $attribute->documentation ?? '',
+            $method->name,
+            $attribute->description,
             $parameters,
             ValueObject\Type::fromReflection($method->getReturnType()),
         );
-    }
-
-    private static function getAttribute(
-        ReflectionAttribute ...$attributes
-    ): Attribute\DaggerFunction {
-        foreach ($attributes as $attribute) {
-            $result = $attribute->newInstance();
-            if ($result instanceof Attribute\DaggerFunction) {
-                return $result;
-            }
-        }
-
-        throw new RuntimeException('method is not a DaggerFunction');
     }
 }
