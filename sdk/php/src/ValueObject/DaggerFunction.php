@@ -24,9 +24,10 @@ final readonly class DaggerFunction
     /* @throws \RuntimeException if missing DaggerFunction Attribute */
     public static function fromReflection(ReflectionMethod $method): self
     {
-        $attribute = (current($method
-            ->getAttributes(Attribute\DaggerFunction::class))?: null)?->newInstance()
-            ?? throw new RuntimeException('method is not a DaggerFunction');
+        $attribute = (
+            current($method->getAttributes(Attribute\DaggerFunction::class)) ?:
+                throw new RuntimeException('method is not a DaggerFunction')
+        )->newInstance();
 
         $parameters = array_map(
             fn($p) => ValueObject\Parameter::fromReflection($p),
