@@ -12,25 +12,30 @@ use RuntimeException;
 
 final readonly class DaggerFunction
 {
-    /** @param ValueObject\Parameter[] $parameters */
+    /** @param ValueObject\DaggerArgument[] $arguments */
     public function __construct(
         public string $name,
         public ?string $description,
-        public array $parameters,
+        public array $arguments,
         public ValueObject\Type $returnType,
     ) {
     }
 
-    /* @throws \RuntimeException if missing DaggerFunction Attribute */
+    /**
+     * @throws RuntimeException
+     * - if missing DaggerFunction Attribute
+     * - if any parameter types are unsupported
+     * - if the return type is unsupported
+     */
     public static function fromReflection(ReflectionMethod $method): self
     {
-        $attribute = (
-            current($method->getAttributes(Attribute\DaggerFunction::class)) ?:
-                throw new RuntimeException('method is not a DaggerFunction')
-        )->newInstance();
+        $attribute = (current($method
+            ->getAttributes(Attribute\DaggerFunction::class)) ?: null)
+            ?->newInstance() ??
+            throw new RuntimeException('method is not a DaggerFunction');
 
         $parameters = array_map(
-            fn($p) => ValueObject\Parameter::fromReflection($p),
+            fn($p) => ValueObject\DaggerArgument::fromReflection($p),
             $method->getParameters(),
         );
 

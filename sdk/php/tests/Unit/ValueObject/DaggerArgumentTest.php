@@ -7,7 +7,7 @@ namespace Dagger\tests\Unit\ValueObject;
 use Dagger\Container;
 use Dagger\Directory;
 use Dagger\File;
-use Dagger\ValueObject\Parameter;
+use Dagger\ValueObject\DaggerArgument;
 use Dagger\ValueObject\Type;
 use Generator;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -19,16 +19,16 @@ use ReflectionNamedType;
 use ReflectionParameter;
 use ReflectionType;
 
-#[CoversClass(Parameter::class)]
-class ParameterTest extends TestCase
+#[CoversClass(DaggerArgument::class)]
+class DaggerArgumentTest extends TestCase
 {
     #[Test]
     #[DataProvider('provideReflectionParameters')]
     public function ItBuildsFromReflectionParameter(
-        Parameter $expected,
+        DaggerArgument $expected,
         ReflectionParameter $reflectionParameter,
     ): void {
-        $actual = Parameter::fromReflection($reflectionParameter);
+        $actual = DaggerArgument::fromReflection($reflectionParameter);
 
         self::assertEquals($expected, $actual);
     }
@@ -36,8 +36,8 @@ class ParameterTest extends TestCase
     /** @return Generator<array{ 0: Type, 1:ReflectionNamedType}> */
     public static function provideReflectionParameters(): Generator
     {
-        yield 'array parameter' =>  [
-            new Parameter('param', new Type('array')),
+        yield 'array parameter without description' =>  [
+            new DaggerArgument('param', null, new Type('array')),
             self::getReflectionParameter(new class() {
                 public function method(array $param): void
                 {
@@ -45,17 +45,19 @@ class ParameterTest extends TestCase
             }, 'method', 'param'),
         ];
 
-        yield 'bool parameter' =>  [
-            new Parameter('param', new Type('bool')),
+        yield 'bool parameter with description' =>  [
+            new DaggerArgument('param', 'true or false', new Type('bool')),
             self::getReflectionParameter(new class() {
-                public function method(bool $param): void
-                {
+                public function method(
+                    #[\Dagger\Attribute\DaggerArgument('true or false')]
+                    bool $param
+                ): void {
                 }
             }, 'method', 'param'),
         ];
 
-        yield 'float parameter' =>  [
-            new Parameter('param', new Type('float')),
+        yield 'float parameter without description' =>  [
+            new DaggerArgument('param', null, new Type('float')),
             self::getReflectionParameter(new class() {
                 public function method(float $param): void
                 {
@@ -63,17 +65,19 @@ class ParameterTest extends TestCase
             }, 'method', 'param'),
         ];
 
-        yield 'int parameter' =>  [
-            new Parameter('param', new Type('int')),
+        yield 'int parameter, with description' =>  [
+            new DaggerArgument('param', 'A whole number', new Type('int')),
             self::getReflectionParameter(new class() {
-                public function method(int $param): void
-                {
+                public function method(
+                    #[\Dagger\Attribute\DaggerArgument('A whole number')]
+                    int $param
+                ): void {
                 }
             }, 'method', 'param'),
         ];
 
-        yield 'string parameter' =>  [
-            new Parameter('param', new Type('string')),
+        yield 'string parameter without description' =>  [
+            new DaggerArgument('param', null, new Type('string')),
             self::getReflectionParameter(new class() {
                 public function method(string $param): void
                 {
@@ -82,16 +86,23 @@ class ParameterTest extends TestCase
         ];
 
         yield 'Container parameter' =>  [
-            new Parameter('param', new Type(Container::class)),
+            new DaggerArgument(
+                'param',
+                'Container to run',
+                new Type(Container::class)
+            ),
             self::getReflectionParameter(new class() {
-                public function method(Container $param): void
+                public function method(
+                    #[\Dagger\Attribute\DaggerArgument('Container to run')]
+                    Container $param
+                ): void
                 {
                 }
             }, 'method', 'param'),
         ];
 
-        yield 'Directory parameter' =>  [
-            new Parameter('param', new Type(Directory::class)),
+        yield 'Directory parameter without description' =>  [
+            new DaggerArgument('param', null, new Type(Directory::class)),
             self::getReflectionParameter(new class() {
                 public function method(Directory $param): void
                 {
@@ -99,8 +110,8 @@ class ParameterTest extends TestCase
             }, 'method', 'param'),
         ];
 
-        yield 'File parameter' =>  [
-            new Parameter('param', new Type(File::class)),
+        yield 'File parameter without description' =>  [
+            new DaggerArgument('param', null, new Type(File::class)),
             self::getReflectionParameter(new class() {
                 public function method(File $param): void
                 {

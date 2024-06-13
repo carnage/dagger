@@ -82,10 +82,11 @@ class EntrypointCommand extends Command
                     $func = $func->withDescription($daggerFunction->description);
                 }
 
-                foreach ($daggerFunction->parameters as $parameter) {
+                foreach ($daggerFunction->arguments as $argument) {
                     $func = $func->withArg(
-                        $parameter->name,
-                        $this->getTypeDef($parameter->type),
+                        $argument->name,
+                        $this->getTypeDef($argument->type),
+                        $argument->description,
                     );
                 }
 

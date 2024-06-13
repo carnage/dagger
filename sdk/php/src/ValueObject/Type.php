@@ -17,6 +17,11 @@ final readonly class Type
 
     //@TODO support union/intersection types
     //@TODO check for no return type
+
+    /**
+     * @throws \RuntimeException
+     * if type is unsupported
+     */
     public static function fromReflection(ReflectionType $type): self
     {
         if (!($type instanceof ReflectionNamedType)) {

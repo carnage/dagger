@@ -6,7 +6,7 @@ namespace Dagger\tests\Unit\ValueObject;
 
 use Dagger\Attribute;
 use Dagger\ValueObject\DaggerFunction;
-use Dagger\ValueObject\Parameter;
+use Dagger\ValueObject\DaggerArgument;
 use Dagger\ValueObject\Type;
 use Generator;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -66,7 +66,7 @@ class DaggerFunctionTest extends TestCase
             new DaggerFunction(
                 'echoText',
                 null,
-                [new Parameter('text', new Type('string'))],
+                [new DaggerArgument('text', new Type('string'))],
                 new Type('void'),
             ),
             new ReflectionMethod(new class () {

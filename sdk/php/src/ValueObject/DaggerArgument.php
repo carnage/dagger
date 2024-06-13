@@ -4,22 +4,27 @@ declare(strict_types=1);
 
 namespace Dagger\ValueObject;
 
-use Dagger\ValueObject\Type;
+use Dagger\Attribute;
 use ReflectionParameter;
-use ReflectionType;
 
-final readonly class Parameter
+final readonly class DaggerArgument
 {
     public function __construct(
         public string $name,
+        public ?string $description,
         public Type $type,
     ) {
     }
 
     public static function fromReflection(ReflectionParameter $parameter): self
     {
+        $attribute = (current($parameter
+            ->getAttributes(Attribute\DaggerArgument::class)) ?: null)
+            ?->newInstance();
+
         return new self(
             $parameter->name,
+            $attribute?->description,
             Type::fromReflection($parameter->getType()),
         );
     }
