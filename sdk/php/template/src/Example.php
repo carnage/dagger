@@ -15,7 +15,7 @@ class Example
 {
     public Client $client;
 
-     #[DaggerFunction('echo the value to standard output')]
+     #[DaggerFunction('Echo the value to standard output')]
      public function echo(string $value): Container
      {
          return $this->client->container()->from('alpine:latest')
