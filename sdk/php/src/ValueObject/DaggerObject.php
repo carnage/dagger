@@ -23,7 +23,9 @@ final readonly class DaggerObject
 
     /**
      * @throws \RuntimeException
-     * if class is missing DaggerObject Attribute
+     * - if missing DaggerObject Attribute
+     * - if any DaggerFunction parameter type is unsupported
+     * - if any DaggerFunction return type is unsupported
      */
     public static function fromReflection(
         ReflectionClass $class,
