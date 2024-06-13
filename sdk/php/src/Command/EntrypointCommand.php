@@ -78,8 +78,8 @@ class EntrypointCommand extends Command
                         $this->getTypeDef($daggerFunction->returnType)
                     );
 
-                if ($daggerFunction->description) {
-                    $func->withDescription($daggerFunction->description);
+                if ($daggerFunction->description !== null) {
+                    $func = $func->withDescription($daggerFunction->description);
                 }
 
                 foreach ($daggerFunction->parameters as $parameter) {
